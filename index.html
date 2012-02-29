@@ -57,16 +57,14 @@
         }, dojo.create("div"));
 
 
-        var initExtent = new esri.geometry.Extent({"xmin":-8401848.31378072,"ymin":4858589.25870394,"xmax":-8323793.98086539,"ymax":4889506.17718086,"spatialReference":{"wkid":102100}});
-        map = new esri.Map("map",{
-          extent:initExtent,
+        map = new esri.Map("map",{          
           infoWindow:popup,
           outFields: ["*"]
         });
 
         dojo.addClass(map.infoWindow.domNode, "myTheme");
 
-
+        dojo.connect(map, "onLoad", locateFunc);
         dojo.connect(map,"onClick",function(evt){
           var query = new esri.tasks.Query();
           query.geometry = pointToExtent(map,evt.mapPoint,10);
@@ -97,18 +95,56 @@
 
         map.addLayer(featureLayer);
 
-
         dojo.connect(map, 'onLoad', function(theMap) {
          //resize the map when the browser resizes
          dojo.connect(dijit.byId('map'), 'resize', map,map.resize);
         });
+      }
+      
+     function locateFunc(map){
+       dojo.connect(window, 'resize', map,map.resize);
+        if(navigator.geolocation){  
+          navigator.geolocation.getCurrentPosition(projectAndZoomToLocation, locationError);
+          watchId = navigator.geolocation.watchPosition(projectAndShowLocation, locationError);
+        }
+        else{
+          //do nothing, they don't have geolocation available
+        }       
+     }
+     
+     function locationError(error) {
+        //error occurred so stop watchPosition
+        if(navigator.geolocation){
+          navigator.geolocation.clearWatch(watchId);
+        }
+        switch (error.code) {
+        case error.PERMISSION_DENIED:
+          alert("Location not provided");
+          break;
+        case error.POSITION_UNAVAILABLE:
+          alert("Current location not available");
+          break;
+        case error.TIMEOUT:
+          alert("Timeout");
+          break;
+        default:
+          alert("unknown error");
+          break;
+        }
+      } 
+      
+      function projectAndZoomToLocation(location) {
+        //this lat and long point needs to be projected to zoom in on this map
+      }
+      
+      function projectAndShowLocation(location){        
+        //this lat and long point needs to be projected to show on this map
       }
 
      function getTextContent(graphic) {
        var content;
        content = graphic.attributes.LOCATION
         return  content + "<br/> Rack Type:" + graphic.attributes.RACK_TYPE  + "<br/> Number of Racks: " + graphic.attributes.NUM_RACKS;
-
       }
 
      function pointToExtent(map, point, toleranceInPixel) {
